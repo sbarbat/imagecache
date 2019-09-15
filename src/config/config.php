@@ -1,7 +1,6 @@
 <?php
 
 return array(
-
     /*
     |--------------------------------------------------------------------------
     | Name of route
@@ -32,7 +31,7 @@ return array(
 
     'paths' => array(
         public_path('upload'),
-        public_path('images')
+        public_path('images'),
     ),
 
     /*
@@ -68,4 +67,16 @@ return array(
 
     'lifetime' => 43200,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Next generation image format
+    |--------------------------------------------------------------------------
+    |
+    | Use webp if the client browser allows it.
+    |
+    */
+    'nextgen' => array(
+        'enable' => true,
+        'encoding' => 'webp',
+    ),
 );
