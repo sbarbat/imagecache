@@ -3,7 +3,6 @@
 namespace Intervention\Image;
 
 use Closure;
-use Intervention\Image\ImageManager;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Response as IlluminateResponse;
 use Config;
@@ -14,8 +13,9 @@ class ImageCacheController extends BaseController
      * Get HTTP response of either original image file or
      * template applied file.
      *
-     * @param  string $template
-     * @param  string $filename
+     * @param string $template
+     * @param string $filename
+     *
      * @return Illuminate\Http\Response
      */
     public function getResponse($template, $filename)
@@ -33,10 +33,11 @@ class ImageCacheController extends BaseController
     }
 
     /**
-     * Get HTTP response of template applied image file
+     * Get HTTP response of template applied image file.
      *
-     * @param  string $template
-     * @param  string $filename
+     * @param string $template
+     * @param string $filename
+     *
      * @return Illuminate\Http\Response
      */
     public function getImage($template, $filename)
@@ -47,7 +48,6 @@ class ImageCacheController extends BaseController
         // image manipulation based on callback
         $manager = new ImageManager(Config::get('image'));
         $content = $manager->cache(function ($image) use ($template, $path) {
-
             if ($template instanceof Closure) {
                 // build from closure callback template
                 $template($image->make($path));
@@ -55,15 +55,21 @@ class ImageCacheController extends BaseController
                 // build from filter template
                 $image->make($path)->filter($template);
             }
+
+            if ($this->isNextGenerationRequest()) {
+                $image->encode(config('imagecache.nextgen.encoding', 'webp'));
+                $image->setProperty('encoding', config('imagecache.nextgen.encoding', 'webp'));
+            }
         }, config('imagecache.lifetime'));
 
         return $this->buildResponse($content);
     }
 
     /**
-     * Get HTTP response of original image file
+     * Get HTTP response of original image file.
      *
-     * @param  string $filename
+     * @param string $filename
+     *
      * @return Illuminate\Http\Response
      */
     public function getOriginal($filename)
@@ -74,9 +80,10 @@ class ImageCacheController extends BaseController
     }
 
     /**
-     * Get HTTP response of original image as download
+     * Get HTTP response of original image as download.
      *
-     * @param  string $filename
+     * @param string $filename
+     *
      * @return Illuminate\Http\Response
      */
     public function getDownload($filename)
@@ -85,14 +92,15 @@ class ImageCacheController extends BaseController
 
         return $response->header(
             'Content-Disposition',
-            'attachment; filename=' . $filename
+            'attachment; filename='.$filename
         );
     }
 
     /**
-     * Returns corresponding template object from given template name
+     * Returns corresponding template object from given template name.
      *
-     * @param  string $template
+     * @param string $template
+     *
      * @return mixed
      */
     protected function getTemplate($template)
@@ -106,7 +114,7 @@ class ImageCacheController extends BaseController
 
             // filter template found
             case class_exists($template):
-                return new $template;
+                return new $template();
 
             default:
                 // template not found
@@ -116,9 +124,10 @@ class ImageCacheController extends BaseController
     }
 
     /**
-     * Returns full image path from given filename
+     * Returns full image path from given filename.
      *
-     * @param  string $filename
+     * @param string $filename
+     *
      * @return string
      */
     protected function getImagePath($filename)
@@ -138,9 +147,24 @@ class ImageCacheController extends BaseController
     }
 
     /**
-     * Builds HTTP response from given image data
+     * Determines if must use a next generation image encoding.
      *
-     * @param  string $content
+     * @param string $content
+     *
+     * @return Illuminate\Http\Response
+     */
+    protected function isNextGenerationRequest(): bool
+    {
+        return config('imagecache.nextgen.enable', false) &&
+            Str::contains(request()->header('Accept'), 'image/webp')
+        ;
+    }
+
+    /**
+     * Builds HTTP response from given image data.
+     *
+     * @param string $content
+     *
      * @return Illuminate\Http\Response
      */
     protected function buildResponse($content)
@@ -157,9 +181,9 @@ class ImageCacheController extends BaseController
         // return http response
         return new IlluminateResponse($content, $status_code, array(
             'Content-Type' => $mime,
-            'Cache-Control' => 'max-age='.(config('imagecache.lifetime')*60).', public',
+            'Cache-Control' => 'max-age='.(config('imagecache.lifetime') * 60).', public',
             'Content-Length' => strlen($content),
-            'Etag' => $etag
+            'Etag' => $etag,
         ));
     }
 }
