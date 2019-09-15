@@ -156,7 +156,7 @@ class ImageCacheController extends BaseController
     protected function isNextGenerationRequest(): bool
     {
         return config('imagecache.nextgen.enable', false) &&
-            Str::contains(request()->header('Accept'), 'image/webp')
+                request()->accepts('image/webp')
         ;
     }
 
